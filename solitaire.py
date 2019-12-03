@@ -31,13 +31,15 @@ class Deck(object):
         self.makeDeck()
 
     def makeDeck(self):
+        #makes a card for each combo of values and suits, puts them into the deck
         for v in self.values:
             for s in self.suits:
                 card = Card(self.canvas,v,s)
                 self.deck.append(card)
-                card.draw()
-        assert (len(self.deck) == sefl.size)
-
+        random.shuffle(self.deck)
+        for card in self.deck:
+            card.draw()
+        assert (len(self.deck) == self.size)
         
     def drawShape(self):
         (cX,cY,r) = (self.cX,self.cY,self.radius)
