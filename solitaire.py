@@ -37,14 +37,8 @@ class Deck(object):
                 card = Card(self.canvas,v,s)
                 self.deck.append(card)
         random.shuffle(self.deck)
-        for card in self.deck:
-            card.draw()
         assert (len(self.deck) == self.size)
-        
-    def drawShape(self):
-        (cX,cY,r) = (self.cX,self.cY,self.radius)
-        color = self.color
-        self.canvas.create_oval(cX-r,cY-r,cX+r,cY+r,fill=color)
+
 
 class Circle(object):
     def __init__(self,canvas):
