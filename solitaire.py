@@ -38,7 +38,7 @@ class Card(object):
         self.rect(size, self.color, 2)
         color = 'black'
         if self.isFaceUp:
-            if self.suit == 'H' or self.suit == 'D': color = 'red'
+            if self.suit == '♦' or self.suit == '♥': color = 'red'
             name = '' + self.value + self.suit            
             canvas.create_text(self.cx - (size/2), self.cy - (size*self.phi/2), 
                                anchor = NW, text = name, fill = color, font = 10)
@@ -59,6 +59,7 @@ class Deck(object):
         self.deck = []
         self.values = ['2','3','4','5','6','7','8','9','10','J','Q','K','A']
         self.suits = ['C','D','H','S']
+        self.suits = ['♠','♦','♥','♣']
         self.makeDeck()
 
     def makeDeck(self):
