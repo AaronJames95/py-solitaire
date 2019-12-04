@@ -37,23 +37,54 @@ class Deck(object):
                 card = Card(self.canvas,v,s)
                 self.deck.append(card)
         random.shuffle(self.deck)
-        assert (len(self.deck) == self.size)
+        assert(len(self.deck) == self.size)
+    
+    def rotate(self):
+        pass
 
 
-class Circle(object):
-    def __init__(self,canvas):
-        self.radius = 20
-        self.canvas = canvas
-        self.color = "white"
+class Stack(object):
+    def __init__(self):
+        self.stack = []
         
-    def drawShape(self):
-        (cX,cY,r) = (self.cX,self.cY,self.radius)
-        color = self.color
-        self.canvas.create_oval(cX-r,cY-r,cX+r,cY+r,fill=color)
+    def len(self):
+        return len(self.stack)
+        
+    def push(self,item):
+        #adds item to top of stack
+        assert(type(item.suit) == str)
+        #basically asserts item is a Card
+        self.stack.append(item)
+        
+    def pop(self):
+        # removes and returns item from top of stack
+        return self.stack.pop(-1)
 
-class Target(Circle):
-    def __init__(self,canvas):
-        super(Target, self).__init__(canvas)
+    def isLegal(self,item):
+        return True
+
+    def add(self, items):
+        #pushes list of items to the stack
+        for item in items:
+            if self.isLegal(item):
+                assert(type(item.suit) == str)
+                self.push(item)
+    
+    def remove(self, items):
+        #pushes list of items to the stack
+        new = Stack()
+        #can't remove more items than exist
+        assert (items <= len(self.stack))
+        for item in range(items):
+            new.push(self.stack.pop())
+            
+        return new
+
+
+
+class  MixedStack(Stack):
+    def __init__(self):
+        super(Stack, self).__init__()
         self.color = "red"
         self.cX = random.randint(20,480)
         self.cY = 40
@@ -125,7 +156,8 @@ class Animation(object):
         
     
     def init(self):
-        Deck(canvas)
+        Test(canvas)
+        self.deck = Deck(canvas)
         self.targets = [Target(canvas),Target(canvas)]
         self.shooter = Shooter(canvas)
         self.bullet = Bullet(canvas)
@@ -151,6 +183,45 @@ class Animation(object):
         root.bind("<Key>", lambda event: self.keyPressed(event))
         self.timerFired()
         root.mainloop()  # This call BLOCKS (so your program waits until you close the window!)
+
+class Test(object):
+    def __init__(self,canvas):
+        self.canvas = canvas
+        self.runTests()
+        
+
+    def runTests(self):
+        self.testStack()
+        pass
+
+    def testStack(self):
+        card1 = Card(self.canvas,'A','diamonds')
+        card2 = Card(self.canvas, '2','spades')
+        stack = Stack()
+        stack.push(card1)
+        assert(stack.len() == 1)
+        stack.push(card2)
+        assert(stack.len() == 2)
+        pop = stack.pop()
+        assert(stack.len() == 1) 
+        assert(pop.suit == 'spades')
+        assert(pop.value == '2')
+        pop = stack.pop()
+        assert(stack.len() == 0 and pop.suit == 'diamonds' and pop.value == 'A')
+        stack.add([card1,card2])
+        assert(stack.len() == 2)
+        pop = stack.pop()
+        assert(pop.suit == 'spades' and pop.value == '2')
+        stack.push(card2)
+        assert(stack.len() == 2)
+        stack.remove(2)
+        assert(stack.len() == 0)
+
+    def testCard(self):
+        pass
+
+    def testDeck(self):
+        pass
 
 animation = Animation()
 animation.run()
