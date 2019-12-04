@@ -4,10 +4,10 @@ import math
 
 class Card(object):
     def __init__(self,canvas,value,suit):
-        self.radius = 20
         self.value = value
         self.suit = suit
         self.canvas = canvas
+        self.isFaceUp = False
         self.color = "white"
 
     def move(self, canvas):
@@ -52,9 +52,13 @@ class Stack(object):
         
     def push(self,item):
         #adds item to top of stack
-        assert(type(item.suit) == str)
         #basically asserts item is a Card
-        self.stack.append(item)
+        assert(type(item.suit) == str)
+        if self.isLegal(item):
+            self.stack.append(item)
+        #returns if operation was successful or not
+        return isLegal(item)
+        
         
     def pop(self):
         # removes and returns item from top of stack
@@ -66,9 +70,7 @@ class Stack(object):
     def add(self, items):
         #pushes list of items to the stack
         for item in items:
-            if self.isLegal(item):
-                assert(type(item.suit) == str)
-                self.push(item)
+            self.push(item)
     
     def remove(self, items):
         #pushes list of items to the stack
@@ -77,7 +79,6 @@ class Stack(object):
         assert (items <= len(self.stack))
         for item in range(items):
             new.push(self.stack.pop())
-            
         return new
 
 
