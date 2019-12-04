@@ -1,40 +1,70 @@
 from tkinter import *
+from PIL import ImageTk,Image  
+
 import random
 import math
 
+#Canvas is global -\_(",)_/-
+
 class Card(object):
-    def __init__(self,canvas,value,suit):
+    def __init__(self,value,suit):
         self.value = value
         self.suit = suit
-        self.canvas = canvas
         self.isFaceUp = False
         self.color = "white"
+        self.backColor = 'blue'
 
-    def move(self, canvas):
-        pass
+    def flip(self):
+        self.isFaceUp = not self.isFaceUp
+
+    def move(self, cx, cy):
+        self.cx, self.cy = cx, cy
+        assert(type(self.cx) == int and type(self.cy) == int)
+        print(cx,cy)
+        input('-')
+
+    def rect(self, size, color, w):
+        phi = (1.0 + 5.0**0.5) / 2
+        #width and height radius (wr, wh)
+        self.wr = size / 2
+        self.hr = int(self.wr * phi)
+        self.x1, self.x2 = self.cx - self.wr, self.cx + self.wr
+        self.y1, self.y2 = self.cy - self.hr, self.cy + self.hr
+        canvas.create_rectangle(self.x1, self.y1, 
+                                self.x2, self.y2,
+                                fill = color,width = w)
 
     def draw(self):
+        size = 50
+        self.rect(size, self.color, 2)
+        if self.isFaceUp:            
+            img = ImageTk.PhotoImage(Image.open("2_of_clubs.png"))
+            canvas.create_image(20, 20, anchor=NW, image=img)  
+            #canvas.create_image(self.cx, self.cy, image = img, anchor = NW)
+        else:
+            self.rect(size - 6, self.backColor, 2)
+
+        
         '''
         (cX,cY,r) = (self.cX,self.cY,self.radius)
         color = self.color
         self.canvas.create_oval(cX-r,cY-r,cX+r,cY+r,fill=color)
         '''
-        print (self.value,'of',self.suit)
+        #print (self.value,'of',self.suit)
 
 class Deck(object):
-    def __init__(self,canvas):
+    def __init__(self):
         self.size = 52
         self.deck = []
         self.values = ['2','3','4','5','6','7','8','9','10','J','Q','K','A']
         self.suits = ['clubs','diamonds','hearts','spades']
-        self.canvas = canvas
         self.makeDeck()
 
     def makeDeck(self):
         #makes a card for each combo of values and suits, puts them into the deck
         for v in self.values:
             for s in self.suits:
-                card = Card(self.canvas,v,s)
+                card = Card(v,s)
                 self.deck.append(card)
         random.shuffle(self.deck)
         assert(len(self.deck) == self.size)
@@ -57,7 +87,7 @@ class Stack(object):
         if self.isLegal(item):
             self.stack.append(item)
         #returns if operation was successful or not
-        return isLegal(item)
+        return self.isLegal(item)
         
         
     def pop(self):
@@ -120,7 +150,8 @@ class Animation(object):
         self.redrawAll()
     
     def timerFired(self):
-        winGame = False
+        
+        '''
         for target in self.targets:
             target.cY += target.speed
             if target.cY > 520:
@@ -140,32 +171,32 @@ class Animation(object):
                 winGame = True
         if winGame:
             self.targets.append(Target(canvas))
-            
+        '''
         self.redrawAll()
         delay = 10 # milliseconds
         canvas.after(delay, self.timerFired) # pause, then call timerFired again
     
     def redrawAll(self):
         canvas.delete(ALL)
-        canvas.create_rectangle(0,0, 502, 502, fill = 'white') 
+        canvas.create_rectangle(0,0, 
+                                self.width + 1, self.height + 1, 
+                                fill = self.backgroundColor) 
+        Test()
+        input('Pause (redrawall)')
+        assert(1 == 2)
+        '''
         self.shooter.drawShooter() 
         for target in self.targets:
             target.drawTarget()
         self.bullet.drawBullet()
         if self.helpUp:
             self.drawHelp()
+        '''
         
     
     def init(self):
-        Test(canvas)
-        self.deck = Deck(canvas)
-        self.targets = [Target(canvas),Target(canvas)]
-        self.shooter = Shooter(canvas)
-        self.bullet = Bullet(canvas)
-        self.bulletSpeed = 15
-        self.isShot = False
-        self.score = 0
-        self.helpUp = False
+        self.deck = Deck()
+        self.backgroundColor = 'green'
         
     def drawHelp(self):
         canvas.create_text(250,240,text = "Use mouse to aim")
@@ -176,28 +207,28 @@ class Animation(object):
     def run(self):
         global canvas
         root = Tk()
-        canvas = Canvas(root, width=500, height=500)
+        self.width, self.height = 800, 600
+        canvas = Canvas(root, width = self.width, height = self.height)
         canvas.pack()
         self.init()
-        input('PAUSE (line 152)')
         root.bind("<Button-1>", lambda event: self.mousePressed(event))
         root.bind("<Key>", lambda event: self.keyPressed(event))
         self.timerFired()
         root.mainloop()  # This call BLOCKS (so your program waits until you close the window!)
 
 class Test(object):
-    def __init__(self,canvas):
-        self.canvas = canvas
+    def __init__(self):
         self.runTests()
-        
 
     def runTests(self):
         self.testStack()
+        self.testCard()
+
         pass
 
     def testStack(self):
-        card1 = Card(self.canvas,'A','diamonds')
-        card2 = Card(self.canvas, '2','spades')
+        card1 = Card('A','diamonds')
+        card2 = Card('2','spades')
         stack = Stack()
         stack.push(card1)
         assert(stack.len() == 1)
@@ -219,6 +250,14 @@ class Test(object):
         assert(stack.len() == 0)
 
     def testCard(self):
+        card = Card('A','spades')
+        card.move(400,300)
+        card.draw()
+        
+        card2 = Card('A', 'clubs')
+        card2.move(200,300)
+        card2.flip()
+        card2.draw()
         pass
 
     def testDeck(self):
