@@ -13,6 +13,7 @@ class Card(object):
         self.isFaceUp = False
         self.color = "white"
         self.backColor = 'blue'
+        self.phi = (1.0 + 5.0**0.5) / 2
 
     def flip(self):
         self.isFaceUp = not self.isFaceUp
@@ -20,27 +21,27 @@ class Card(object):
     def move(self, cx, cy):
         self.cx, self.cy = cx, cy
         assert(type(self.cx) == int and type(self.cy) == int)
-        print(cx,cy)
-        input('-')
 
     def rect(self, size, color, w):
-        phi = (1.0 + 5.0**0.5) / 2
         #width and height radius (wr, wh)
-        self.wr = size / 2
-        self.hr = int(self.wr * phi)
-        self.x1, self.x2 = self.cx - self.wr, self.cx + self.wr
-        self.y1, self.y2 = self.cy - self.hr, self.cy + self.hr
+        wr = size / 2
+        hr = int(wr * self.phi)
+        self.x1, self.x2 = self.cx - wr, self.cx + wr
+        self.y1, self.y2 = self.cy - hr, self.cy + hr
         canvas.create_rectangle(self.x1, self.y1, 
                                 self.x2, self.y2,
-                                fill = color,width = w)
+                                fill = color, width = w)
 
     def draw(self):
         size = 50
+
         self.rect(size, self.color, 2)
-        if self.isFaceUp:            
-            img = ImageTk.PhotoImage(Image.open("2_of_clubs.png"))
-            canvas.create_image(20, 20, anchor=NW, image=img)  
-            #canvas.create_image(self.cx, self.cy, image = img, anchor = NW)
+        color = 'black'
+        if self.isFaceUp:
+            if self.suit == 'H' or self.suit == 'D': color = 'red'
+            name = '' + self.value + self.suit            
+            canvas.create_text(self.cx - (size/2), self.cy - (size*self.phi/2), 
+                               anchor = NW, text = name, fill = color, font = 10)
         else:
             self.rect(size - 6, self.backColor, 2)
 
@@ -57,7 +58,7 @@ class Deck(object):
         self.size = 52
         self.deck = []
         self.values = ['2','3','4','5','6','7','8','9','10','J','Q','K','A']
-        self.suits = ['clubs','diamonds','hearts','spades']
+        self.suits = ['C','D','H','S']
         self.makeDeck()
 
     def makeDeck(self):
@@ -68,14 +69,18 @@ class Deck(object):
                 self.deck.append(card)
         random.shuffle(self.deck)
         assert(len(self.deck) == self.size)
+
+    def deal(self):
+        return self.deck.pop()
     
     def rotate(self):
         pass
 
 
 class Stack(object):
-    def __init__(self):
+    def __init__(self, column = 0):
         self.stack = []
+        self.column = column
         
     def len(self):
         return len(self.stack)
@@ -88,7 +93,9 @@ class Stack(object):
             self.stack.append(item)
         #returns if operation was successful or not
         return self.isLegal(item)
-        
+
+    def top(self):
+        return self.stack[-1]
         
     def pop(self):
         # removes and returns item from top of stack
@@ -114,27 +121,21 @@ class Stack(object):
 
 
 class  MixedStack(Stack):
-    def __init__(self):
-        super(Stack, self).__init__()
-        self.color = "red"
-        self.cX = random.randint(20,480)
-        self.cY = 40
-        self.speed =2
+    def __init__(self, column):
+        super(MixedStack, self).__init__(column)
+        #self.column = column
         
-    def reset(self):
-        self.cX = random.randint(20,480)
-        self.cY = 40
+    def isLegal(self,item):
+        return True
+
+
+class  OrderedStack(Stack):
+    def __init__(self, column):
+        super(OrderedStack, self).__init__(column)
+        #self.column = column
         
-    def drawTarget(self):
-        origRadius = self.radius
-        self.drawShape()
-        self.radius = self.radius *2/3
-        self.color = 'white'
-        self.drawShape()
-        self.radius = self.radius/3
-        self.color = 'red'
-        self.drawShape()
-        self.radius = origRadius
+    def isLegal(self,item):
+        return True
 
 class Animation(object):
 
@@ -181,7 +182,8 @@ class Animation(object):
         canvas.create_rectangle(0,0, 
                                 self.width + 1, self.height + 1, 
                                 fill = self.backgroundColor) 
-        Test()
+        self.drawStacks()
+        Test().testStack()
         input('Pause (redrawall)')
         assert(1 == 2)
         '''
@@ -197,6 +199,38 @@ class Animation(object):
     def init(self):
         self.deck = Deck()
         self.backgroundColor = 'green'
+        self.setupGame()
+        #Test().testSetup(self.mixed)
+
+    def makeStacks(self):
+        self.temp = Stack()
+        self.mixed = [MixedStack(i) for i in range(7)]
+        self.ordered = [OrderedStack(i) for i in range(4)]
+        for i in range(7):
+            for stack in self.mixed:
+                if stack.column >= i:
+                    stack.push(self.deck.deal())
+                    if stack.column == i: stack.stack[-1].flip()
+
+    def setupGame(self):
+        self.makeStacks()
+
+    def drawStacks(self):
+        spacer = 100
+        vertSpacer = 10
+        left = 90
+        mixedHeight = 200
+        for stackCol in range(len(self.mixed)):
+        #iterates through each stack in the list of mixed stacks
+            x = left + spacer*stackCol
+            for cardPos in range(self.mixed[stackCol].len()):
+            #goes through each card in the current mixed stack
+                y = mixedHeight + vertSpacer*cardPos
+                self.mixed[stackCol].stack[cardPos].move(x,y)
+                self.mixed[stackCol].stack[cardPos].draw()
+
+
+        input('look at all the stacks I just drew!')
         
     def drawHelp(self):
         canvas.create_text(250,240,text = "Use mouse to aim")
@@ -218,12 +252,13 @@ class Animation(object):
 
 class Test(object):
     def __init__(self):
-        self.runTests()
+        #self.runTests()
+        pass
 
     def runTests(self):
         self.testStack()
-        self.testCard()
-
+        #self.testCard()
+        print('Tests Passed')
         pass
 
     def testStack(self):
@@ -242,6 +277,7 @@ class Test(object):
         assert(stack.len() == 0 and pop.suit == 'diamonds' and pop.value == 'A')
         stack.add([card1,card2])
         assert(stack.len() == 2)
+        assert(stack.top().suit == 'spades')
         pop = stack.pop()
         assert(pop.suit == 'spades' and pop.value == '2')
         stack.push(card2)
@@ -249,12 +285,18 @@ class Test(object):
         stack.remove(2)
         assert(stack.len() == 0)
 
+    def testSetup(self,mixed):
+        for stack in mixed:
+            for card in stack.stack:
+                print(card.value,card.suit,card.isFaceUp)
+
+
     def testCard(self):
-        card = Card('A','spades')
+        card = Card('A','S')
         card.move(400,300)
         card.draw()
         
-        card2 = Card('A', 'clubs')
+        card2 = Card('10', 'H')
         card2.move(200,300)
         card2.flip()
         card2.draw()
