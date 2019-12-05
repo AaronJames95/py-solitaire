@@ -22,16 +22,6 @@ class Card(object):
     def move(self, cx, cy):
         self.cx, self.cy = cx, cy
         assert(type(self.cx) == int and type(self.cy) == int)
-
-    ''' def rect(self, size, color, w):
-        #width and height radius (wr, wh)
-        wr = size / 2
-        hr = int(wr * self.phi)
-        self.x1, self.x2 = self.cx - wr, self.cx + wr
-        self.y1, self.y2 = self.cy - hr, self.cy + hr
-        canvas.create_rectangle(self.x1, self.y1, 
-                                self.x2, self.y2,
-                                fill = color, width = w)'''
     
     def getRect(self, size = 50):
         #width and height radius (wr, wh)
@@ -63,20 +53,7 @@ class Card(object):
         else:
             p1, p2 = self.getRect(size-6)
             self.drawRect(p1,p2,self.backColor,2)
-            
 
-    '''def draw(self):
-        size = 50
-        self.rect(size, self.color, 2)
-        color = 'black'
-        if self.isFaceUp:
-            if self.suit == '♦' or self.suit == '♥': color = 'red'
-            name = '' + self.value + self.suit            
-            canvas.create_text(self.cx - (size/2), self.cy - (size*self.phi/2), 
-                               anchor = NW, text = name, fill = color, font = 10)
-        else:
-            self.rect(size - 6, self.backColor, 2)
-'''
 class Deck(object):
     def __init__(self):
         self.size = 52
@@ -153,6 +130,12 @@ class  MixedStack(Stack):
     def isLegal(self,item):
         return True
 
+    def getStackBB(self):
+        p1, fake = self.stack[0].getRect()
+        fake, p2 = self.stack[-1].getRect()
+        return p1,p2
+
+
 
 class  OrderedStack(Stack):
     def __init__(self, column):
@@ -165,7 +148,12 @@ class  OrderedStack(Stack):
 class Animation(object):
 
     def mousePressed(self,event):
-        print(event.x,event.y)
+        x, y = event.x, event.y
+        print(x, y)
+        for stack in self.mixed:
+            bb = stack.getStackBB()
+            #bb is tuple of bounding box corners TopLeft BottomRight
+            if self.isPointInBB(x,y,bb[0],bb[1]): print (stack.column)
         #self.shooter.changeAngle(event.x,event.y)
         self.redrawAll()
     
@@ -175,6 +163,13 @@ class Animation(object):
         if event.keysym == "h":
             self.helpUp = not self.helpUp
         self.redrawAll()
+
+    def isPointInBB(self,x,y,p1,p2):
+        #determines if a point is in a bounding box
+        #TESTNEEDED
+        return (p1[0] < x and x < p2[0] and
+                p1[1] < y and y < p2[1])
+
     
     def timerFired(self):
         
@@ -308,6 +303,8 @@ class Test(object):
         assert(stack.len() == 2)
         stack.remove(2)
         assert(stack.len() == 0)
+        self.testGetStackBB()
+ 
 
     def testSetup(self,mixed):
         for stack in mixed:
@@ -325,6 +322,17 @@ class Test(object):
         card2.flip()
         card2.drawCard()
         pass
+
+    def testGetStackBB(self):
+        card1 = Card('A','diamonds')
+        card2 = Card('2','spades')
+        stack = MixedStack(0)
+        card1.move(200,200)
+        stack.push(card1)
+        assert(card1.getRect() == stack.getStackBB())
+   
+        
+
 
     def testDeck(self):
         pass
