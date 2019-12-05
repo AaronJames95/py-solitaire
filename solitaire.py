@@ -13,6 +13,7 @@ class Card(object):
         self.isFaceUp = False
         self.color = "white"
         self.backColor = 'blue'
+        self.size = 50
         self.phi = (1.0 + 5.0**0.5) / 2
 
     def flip(self):
@@ -22,7 +23,7 @@ class Card(object):
         self.cx, self.cy = cx, cy
         assert(type(self.cx) == int and type(self.cy) == int)
 
-    def rect(self, size, color, w):
+    ''' def rect(self, size, color, w):
         #width and height radius (wr, wh)
         wr = size / 2
         hr = int(wr * self.phi)
@@ -30,11 +31,42 @@ class Card(object):
         self.y1, self.y2 = self.cy - hr, self.cy + hr
         canvas.create_rectangle(self.x1, self.y1, 
                                 self.x2, self.y2,
+                                fill = color, width = w)'''
+    
+    def getRect(self, size = 50):
+        #width and height radius (wr, wh)
+        #return topleft and bottomright coords
+        #copy
+        wr = size / 2
+        hr = int(wr * self.phi)
+        x1, x2 = self.cx - wr, self.cx + wr
+        y1, y2 = self.cy - hr, self.cy + hr
+        return (x1, y1),(x2, y2)
+
+    def drawRect(self,p1,p2,color,w):
+        canvas.create_rectangle(p1[0], p1[1], 
+                                p2[0], p2[1],
                                 fill = color, width = w)
+        pass
+        
+    def drawCard(self):
+        #copy
+        size = self.size
+        p1, p2 = self.getRect()
+        self.drawRect(p1,p2,self.color,2)
+        color = 'black'
+        if self.isFaceUp:
+            if self.suit == '♦' or self.suit == '♥': color = 'red'
+            name = '' + self.value + self.suit            
+            canvas.create_text(self.cx - (size/2), self.cy - (size*self.phi/2), 
+                               anchor = NW, text = name, fill = color, font = 10)
+        else:
+            p1, p2 = self.getRect(size-6)
+            self.drawRect(p1,p2,self.backColor,2)
+            
 
-    def draw(self):
+    '''def draw(self):
         size = 50
-
         self.rect(size, self.color, 2)
         color = 'black'
         if self.isFaceUp:
@@ -44,15 +76,7 @@ class Card(object):
                                anchor = NW, text = name, fill = color, font = 10)
         else:
             self.rect(size - 6, self.backColor, 2)
-
-        
-        '''
-        (cX,cY,r) = (self.cX,self.cY,self.radius)
-        color = self.color
-        self.canvas.create_oval(cX-r,cY-r,cX+r,cY+r,fill=color)
-        '''
-        #print (self.value,'of',self.suit)
-
+'''
 class Deck(object):
     def __init__(self):
         self.size = 52
@@ -141,7 +165,8 @@ class  OrderedStack(Stack):
 class Animation(object):
 
     def mousePressed(self,event):
-        self.shooter.changeAngle(event.x,event.y)
+        print(event.x,event.y)
+        #self.shooter.changeAngle(event.x,event.y)
         self.redrawAll()
     
     def keyPressed(self,event):
@@ -185,18 +210,19 @@ class Animation(object):
                                 fill = self.backgroundColor) 
         self.drawStacks()
         Test().testStack()
-        input('Pause (redrawall)')
-        assert(1 == 2)
-        '''
-        self.shooter.drawShooter() 
-        for target in self.targets:
-            target.drawTarget()
-        self.bullet.drawBullet()
-        if self.helpUp:
-            self.drawHelp()
-        '''
         
-    
+    def getBB(self, cx, cy):
+        #gets card shaped bounding box at cx,cy
+        self.cx, self.cy = cx, cy
+        assert(type(self.cx) == int and type(self.cy) == int)
+        size = 50
+        phi = (1.0 + 5.0**0.5) / 2
+        wr = size / 2
+        hr = int(wr * phi)
+        x1, x2 = cx - wr, cx + wr
+        y1, y2 = cy - hr, cy + hr
+        return (x1, y1),(x2, y2)    
+        
     def init(self):
         self.deck = Deck()
         self.backgroundColor = 'green'
@@ -228,10 +254,7 @@ class Animation(object):
             #goes through each card in the current mixed stack
                 y = mixedHeight + vertSpacer*cardPos
                 self.mixed[stackCol].stack[cardPos].move(x,y)
-                self.mixed[stackCol].stack[cardPos].draw()
-
-
-        input('look at all the stacks I just drew!')
+                self.mixed[stackCol].stack[cardPos].drawCard()
         
     def drawHelp(self):
         canvas.create_text(250,240,text = "Use mouse to aim")
@@ -295,12 +318,12 @@ class Test(object):
     def testCard(self):
         card = Card('A','S')
         card.move(400,300)
-        card.draw()
+        card.drawCard()
         
         card2 = Card('10', 'H')
         card2.move(200,300)
         card2.flip()
-        card2.draw()
+        card2.drawCard()
         pass
 
     def testDeck(self):
