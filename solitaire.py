@@ -10,7 +10,8 @@ class Card(object):
     def __init__(self,value,suit):
         self.value = value
         self.suit = suit
-        self.isFaceUp = False
+        #MOD
+        self.isFaceUp = True#False
         self.color = "white"
         self.backColor = 'blue'
         self.size = 50
@@ -113,12 +114,21 @@ class Stack(object):
     
     def remove(self, items):
         #pushes list of items to the stack
-        new = Stack()
+        new = []
         #can't remove more items than exist
         assert (items <= len(self.stack))
         for item in range(items):
-            new.push(self.stack.pop())
+            new.append(self.stack.pop())
         return new
+
+    def isPointInBB(self,x,y,p1,p2):
+        return (p1[0] < x and x < p2[0] and
+                p1[1] < y and y < p2[1])
+
+    def cut(self, stack, itemNum):
+        #puts the top 'itemNum' of items in current stack onto the new one
+        tempStack = Stack()
+        tempStack.add(stack.remove(toRemove))
 
 
 
@@ -134,9 +144,26 @@ class  MixedStack(Stack):
         p1, fake = self.stack[0].getRect()
         fake, p2 = self.stack[-1].getRect()
         return p1,p2
+    
+    def getTopClicked(self,x,y):
+        #for each card in stack
+        for card_i in range(len(self.stack)):
+            #inverse of card index to go backwards through list
+            card_i_reversed = len(self.stack) - 1 - card_i
+            card = self.stack[card_i_reversed]
+            p1, p2 = card.getRect()
+            if card.isFaceUp and self.isPointInBB(x,y,p1,p2):
+                return card_i_reversed
+            
+        return False
 
-
-
+    def clicked(self, x ,y):
+        card_i = self.getTopClicked(x,y)
+        print('col:',self.column,'card_i:',card_i)
+        card = self.stack[card_i]
+        print(card.value,card.suit)
+        toRemove = len(self.stack) - card_i
+        
 class  OrderedStack(Stack):
     def __init__(self, column):
         super(OrderedStack, self).__init__(column)
@@ -145,17 +172,43 @@ class  OrderedStack(Stack):
     def isLegal(self,item):
         return True
 
+class  DragStack(Stack):
+    def __init__(self, column):
+        super(OrderedStack, self).__init__(column)
+        #self.column = column
+        
+    def isLegal(self,item):
+        return True
+    
+    #need draw method
+
 class Animation(object):
 
     def mousePressed(self,event):
         x, y = event.x, event.y
-        print(x, y)
-        for stack in self.mixed:
-            bb = stack.getStackBB()
-            #bb is tuple of bounding box corners TopLeft BottomRight
-            if self.isPointInBB(x,y,bb[0],bb[1]): print (stack.column)
-        #self.shooter.changeAngle(event.x,event.y)
+        yMid = self.mixed[0].getStackBB()[0][1]
+        #print ("Lower?",y > yMid)
+        if y < yMid:
+            #something was clicked in top half of screen
+            pass
+        else:
+            #something clicked in lower half of screen
+            for stack in self.mixed:
+                bb = stack.getStackBB()
+                #bb is tuple of bounding box corners TopLeft,BottomRight
+                if self.isPointInBB(x,y,bb[0],bb[1]): 
+                    self.mixedStackClicked(x,y,stack)
         self.redrawAll()
+    
+    def mixedStackClicked(self, x, y, stack):
+        if self.dragging:
+            pass
+        else:
+            if type(stack.getTopClicked(x,y)) == int:
+                stack.clicked(x,y)
+    
+                #OK fuck need a new "dragstack" obj that can draw itself relative to mouse
+                #self.dragStack.add(tempStack.remove(toRemove)))
     
     def keyPressed(self,event):
         if event.keysym == "space":
@@ -163,6 +216,8 @@ class Animation(object):
         if event.keysym == "h":
             self.helpUp = not self.helpUp
         self.redrawAll()
+
+    
 
     def isPointInBB(self,x,y,p1,p2):
         #determines if a point is in a bounding box
@@ -194,6 +249,7 @@ class Animation(object):
         if winGame:
             self.targets.append(Target(canvas))
         '''
+
         self.redrawAll()
         delay = 10 # milliseconds
         canvas.after(delay, self.timerFired) # pause, then call timerFired again
@@ -221,7 +277,9 @@ class Animation(object):
     def init(self):
         self.deck = Deck()
         self.backgroundColor = 'green'
-        self.setupGame()
+        self.dragging = False
+        self.dragStack = MixedStack(7)
+        self.makeStacks()
         #Test().testSetup(self.mixed)
 
     def makeStacks(self):
@@ -232,14 +290,14 @@ class Animation(object):
             for stack in self.mixed:
                 if stack.column >= i:
                     stack.push(self.deck.deal())
-                    if stack.column == i: stack.stack[-1].flip()
+                    #MOD
+                    if stack.column == i: pass#stack.stack[-1].flip()
 
-    def setupGame(self):
-        self.makeStacks()
+    
 
     def drawStacks(self):
         spacer = 100
-        vertSpacer = 10
+        vertSpacer = 20
         left = 90
         mixedHeight = 200
         for stackCol in range(len(self.mixed)):
