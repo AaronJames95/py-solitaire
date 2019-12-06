@@ -127,8 +127,11 @@ class Stack(object):
 
     def cut(self, stack, itemNum):
         #puts the top 'itemNum' of items in current stack onto the new one
-        tempStack = Stack()
-        tempStack.add(stack.remove(toRemove))
+        temp = Stack()
+        temp.add(self.remove(itemNum))
+        stack.add(temp.remove(itemNum))
+        return stack
+
 
 
 
@@ -156,12 +159,15 @@ class  MixedStack(Stack):
                 return card_i_reversed
         return False
 
-    def clicked(self, x ,y):
+    def cardClicked(self, x ,y, stack):
+        #return DragStack with card and cards under it in order
         card_i = self.getTopClicked(x,y)
         print('col:',self.column,'card_i:',card_i)
         card = self.stack[card_i]
         print(card.value,card.suit)
         toRemove = len(self.stack) - card_i
+        return self.cut(stack,toRemove)
+
 
     def draw(self,start):
         #draws stack starting at a center point, building downwards
@@ -180,7 +186,7 @@ class  OrderedStack(Stack):
         
     def isLegal(self,item):
         return True
-
+'''
 class  DragStack(MixedStack):
     def __init__(self, column = 7):
         super(DragStack, self).__init__(column)
@@ -190,6 +196,7 @@ class  DragStack(MixedStack):
         return True
     
     #need draw method
+'''
 
 class Animation(object):
 
@@ -214,17 +221,12 @@ class Animation(object):
             pass
         else:
             if type(stack.getTopClicked(x,y)) == int:
-                stack.clicked(x,y)
-    
+                stack.cardClicked(x,y,self.dragStack)
+                self.dragging = True
                 #OK fuck need a new "dragstack" obj that can draw itself relative to mouse
-                #self.dragStack.add(tempStack.remove(toRemove)))
     
-    def keyPressed(self,event):
-        if event.keysym == "space":
-            self.isShot = True
-        if event.keysym == "h":
-            self.helpUp = not self.helpUp
-        self.redrawAll()
+    def motion(self,event):
+        self.mouse = (event.x,event.y)
 
     
 
@@ -312,6 +314,8 @@ class Animation(object):
         #iterates through each stack in the list of mixed stacks
             x = left + spacer*stackCol
             self.mixed[stackCol].draw((x,mixedHeight))
+        if self.dragging: self.dragStack.draw(self.mouse)
+
         
     def drawHelp(self):
         canvas.create_text(250,240,text = "Use mouse to aim")
@@ -327,7 +331,7 @@ class Animation(object):
         canvas.pack()
         self.init()
         root.bind("<Button-1>", lambda event: self.mousePressed(event))
-        root.bind("<Key>", lambda event: self.keyPressed(event))
+        root.bind("<Motion>", lambda event: self.motion(event))
         self.timerFired()
         root.mainloop()  # This call BLOCKS (so your program waits until you close the window!)
 
