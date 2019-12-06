@@ -154,7 +154,6 @@ class  MixedStack(Stack):
             p1, p2 = card.getRect()
             if card.isFaceUp and self.isPointInBB(x,y,p1,p2):
                 return card_i_reversed
-            
         return False
 
     def clicked(self, x ,y):
@@ -163,6 +162,16 @@ class  MixedStack(Stack):
         card = self.stack[card_i]
         print(card.value,card.suit)
         toRemove = len(self.stack) - card_i
+
+    def draw(self,start):
+        #draws stack starting at a center point, building downwards
+        vertSpacer = 20
+        x = start[0]
+        for cardPos in range(self.len()):
+        #goes through each card in the current mixed stack
+            y = start[1] + vertSpacer*cardPos
+            self.stack[cardPos].move(x,y)
+            self.stack[cardPos].drawCard()
         
 class  OrderedStack(Stack):
     def __init__(self, column):
@@ -172,9 +181,9 @@ class  OrderedStack(Stack):
     def isLegal(self,item):
         return True
 
-class  DragStack(Stack):
-    def __init__(self, column):
-        super(OrderedStack, self).__init__(column)
+class  DragStack(MixedStack):
+    def __init__(self, column = 7):
+        super(DragStack, self).__init__(column)
         #self.column = column
         
     def isLegal(self,item):
@@ -297,17 +306,12 @@ class Animation(object):
 
     def drawStacks(self):
         spacer = 100
-        vertSpacer = 20
         left = 90
         mixedHeight = 200
         for stackCol in range(len(self.mixed)):
         #iterates through each stack in the list of mixed stacks
             x = left + spacer*stackCol
-            for cardPos in range(self.mixed[stackCol].len()):
-            #goes through each card in the current mixed stack
-                y = mixedHeight + vertSpacer*cardPos
-                self.mixed[stackCol].stack[cardPos].move(x,y)
-                self.mixed[stackCol].stack[cardPos].drawCard()
+            self.mixed[stackCol].draw((x,mixedHeight))
         
     def drawHelp(self):
         canvas.create_text(250,240,text = "Use mouse to aim")
