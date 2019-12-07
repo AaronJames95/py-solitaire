@@ -144,22 +144,26 @@ class Stack(object):
         else:
             assert(False)
 
+    def setEmptyBB(self,bb):
+        self.emptyBB = bb[0], bb[1]
+        
+
 class  MixedStack(Stack):
     def __init__(self, column):
         super(MixedStack, self).__init__(column)
         #self.column = column
-        
+
     def isLegal(self,dragBottom):
         #given the bottom of a drag Stack, sees if it can be placed on stack
+        if self.len() == 0: return (dragBottom.value == 'K')
         top = self.top() #top of stack that was clicked on
         legalSuits = self.rSuits if top.suit in self.bSuits else self.bSuits
         if top.value == 'A': return False
         legalVal = self.values[self.values.index(top.value) - 1]
         return (dragBottom.suit in legalSuits and legalVal == dragBottom.value)
 
-
     def getStackBB(self):
-        if self.len() == 0: return (0,0), (0,0)
+        if self.len() == 0: return self.emptyBB
         #the stack has no bounding box if there are no cards in it (duh)
         p1, fake = self.stack[0].getRect()
         fake, p2 = self.stack[-1].getRect()
@@ -248,7 +252,7 @@ class Animation(object):
             self.dragStack.replace()
             self.dragging = False
         else:
-            stack, card = check[0], check[0].stack[check[1]]
+            stack = check[0]
             stackType = stack.getType()
             if self.dragging:
                 self.dragging = not self.dragging
@@ -257,8 +261,10 @@ class Animation(object):
                     if legal: self.dragStack.empty(stack)
                     else:
                         self.dragStack.replace()
+            elif len(check) == 1:
                 pass
-            elif card.isFaceUp:
+                #click into empty stack
+            elif check[0].stack[check[1]].isFaceUp:
                 stack.cardClicked(self.dragStack, check[1])
                 self.dragStack.setLastStack(stack)
                 self.dragging = True  
@@ -271,6 +277,7 @@ class Animation(object):
             bb = stack.getStackBB()
             #bb is tuple of bounding box corners TopLeft,BottomRight
             if self.isPointInBB(click, bb[0], bb[1]):
+                if stack.len() == 0: return [stack]
                 card_i = stack.getTopClicked(click)
                 return [stack, card_i]
                 #stack.cardClicked(x,y,self.dragStack)
@@ -342,6 +349,7 @@ class Animation(object):
         self.dragging = False
         self.dragStack = DragStack(13)
         self.makeStacks()
+        self.first = True
         #Test().testSetup(self.mixed)
 
     def makeStacks(self):
@@ -362,7 +370,10 @@ class Animation(object):
         for stackCol in range(len(self.mixed)):
         #iterates through each stack in the list of mixed stacks
             x = left + spacer*stackCol
-            self.mixed[stackCol].draw((x,mixedHeight))
+            stack = self.mixed[stackCol]
+            stack.draw((x,mixedHeight))
+            if self.first: stack.setEmptyBB(stack.stack[0].getRect())
+        if self.first: self.first = False
         if self.dragging: self.dragStack.draw(self.mouse)
       
     def drawHelp(self):
