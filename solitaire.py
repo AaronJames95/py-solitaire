@@ -79,7 +79,6 @@ class Deck(object):
     def rotate(self):
         pass
 
-
 class Stack(object):
     def __init__(self, column = 0):
         self.stack = []
@@ -125,15 +124,12 @@ class Stack(object):
         return (p1[0] < x and x < p2[0] and
                 p1[1] < y and y < p2[1])
 
-    def cut(self, stack, itemNum):
+    def cutStack(self, stack, itemNum):
         #puts the top 'itemNum' of items in current stack onto the new one
         temp = Stack()
         temp.add(self.remove(itemNum))
         stack.add(temp.remove(itemNum))
         return stack
-
-
-
 
 class  MixedStack(Stack):
     def __init__(self, column):
@@ -144,6 +140,8 @@ class  MixedStack(Stack):
         return True
 
     def getStackBB(self):
+        if self.len() == 0: return (0,0), (0,0)
+        #the stack has no bounding box if there are no cards in it (duh)
         p1, fake = self.stack[0].getRect()
         fake, p2 = self.stack[-1].getRect()
         return p1,p2
@@ -166,7 +164,7 @@ class  MixedStack(Stack):
         card = self.stack[card_i]
         print(card.value,card.suit)
         toRemove = len(self.stack) - card_i
-        return self.cut(stack,toRemove)
+        return self.cutStack(stack,toRemove)
 
 
     def draw(self,start):
@@ -186,17 +184,22 @@ class  OrderedStack(Stack):
         
     def isLegal(self,item):
         return True
-'''
+
 class  DragStack(MixedStack):
-    def __init__(self, column = 7):
+    def __init__(self, column):
         super(DragStack, self).__init__(column)
         #self.column = column
         
-    def isLegal(self,item):
-        return True
+    def setLastStack(self,stack):
+        self.lastStack = stack
+
+    def replace(self):
+        toRemove = self.len()
+        return self.cutStack(self.lastStack,toRemove)
+
     
     #need draw method
-'''
+
 
 class Animation(object):
 
@@ -204,31 +207,39 @@ class Animation(object):
         x, y = event.x, event.y
         yMid = self.mixed[0].getStackBB()[0][1]
         #print ("Lower?",y > yMid)
+        clickedOnBackground = True
         if y < yMid:
             #something was clicked in top half of screen
+            #MOD
+            
             pass
         else:
+            
             #something clicked in lower half of screen
             for stack in self.mixed:
                 bb = stack.getStackBB()
                 #bb is tuple of bounding box corners TopLeft,BottomRight
+
                 if self.isPointInBB(x,y,bb[0],bb[1]): 
                     self.mixedStackClicked(x,y,stack)
+                    clickedOnBackground = False
+        if self.dragging and clickedOnBackground:
+            self.dragStack.replace()
+            self.dragging = False
         self.redrawAll()
     
     def mixedStackClicked(self, x, y, stack):
         if self.dragging:
+
             pass
         else:
             if type(stack.getTopClicked(x,y)) == int:
                 stack.cardClicked(x,y,self.dragStack)
+                self.dragStack.setLastStack(stack)
                 self.dragging = True
-                #OK fuck need a new "dragstack" obj that can draw itself relative to mouse
     
     def motion(self,event):
         self.mouse = (event.x,event.y)
-
-    
 
     def isPointInBB(self,x,y,p1,p2):
         #determines if a point is in a bounding box
@@ -289,7 +300,7 @@ class Animation(object):
         self.deck = Deck()
         self.backgroundColor = 'green'
         self.dragging = False
-        self.dragStack = MixedStack(7)
+        self.dragStack = DragStack(7)
         self.makeStacks()
         #Test().testSetup(self.mixed)
 
@@ -305,7 +316,6 @@ class Animation(object):
                     if stack.column == i: pass#stack.stack[-1].flip()
 
     
-
     def drawStacks(self):
         spacer = 100
         left = 90
