@@ -86,7 +86,6 @@ class Stack(object):
         self.rSuits = ['♦','♥']
         self.bSuits = ['♣','♠']
 
-
     def len(self):
         return len(self.stack)
         
@@ -147,7 +146,6 @@ class Stack(object):
     def setEmptyBB(self,bb):
         self.emptyBB = bb[0], bb[1]
         
-
 class  MixedStack(Stack):
     def __init__(self, column):
         super(MixedStack, self).__init__(column)
@@ -155,10 +153,10 @@ class  MixedStack(Stack):
 
     def isLegal(self,dragBottom):
         #given the bottom of a drag Stack, sees if it can be placed on stack
-        if self.len() == 0: return (dragBottom.value == 'K')
+        if self.len() == 0: return (dragBottom.value == 'K') #only kings on empty
         top = self.top() #top of stack that was clicked on
         legalSuits = self.rSuits if top.suit in self.bSuits else self.bSuits
-        if top.value == 'A': return False
+        if not top.isFaceUp or top.value == 'A': return False
         legalVal = self.values[self.values.index(top.value) - 1]
         return (dragBottom.suit in legalSuits and legalVal == dragBottom.value)
 
@@ -251,29 +249,34 @@ class Animation(object):
 
     def executeClick(self, click, check):
         #action router
+        #refactor
         x, y = click.x, click.y
-        if not check: 
-            #Background Click
+        if not check: #Background Click
             self.dragStack.replace()
             self.dragging = False
         else:
             stack = check[0]
             stackType = stack.getType()
-            if self.dragging:
-                self.dragging = not self.dragging
-                if stackType == 'Mixed':
-                    legal = stack.isLegal(self.dragStack.getBottom())
-                    if legal: self.dragStack.empty(stack)
-                    else:
-                        self.dragStack.replace()
-            elif len(check) == 1:
+            if stackType == 'Mixed':
+                self.mixClick(click, check)
+            elif stackType == 'Ordered':
                 pass
-                #click into empty stack
-            elif check[0].stack[check[1]].isFaceUp:
-                stack.cardClicked(self.dragStack, check[1])
-                self.dragStack.setLastStack(stack)
-                self.dragging = True  
+            elif stackType == 'Deck':
+                pass
+            else:
+                assert(False)
                 
+                
+    def mixClick(self, click, check):
+        stack = check[0]
+        if self.dragging:
+            self.dragging = False
+            legal = stack.isLegal(self.dragStack.getBottom())
+            self.dragStack.empty(stack) if legal else self.dragStack.replace()
+        elif check[0].stack[check[1]].isFaceUp and len(check) > 1:
+            stack.cardClicked(self.dragStack, check[1])
+            self.dragStack.setLastStack(stack)
+            self.dragging = True  
 
     def checkStacks(self, stacks, click):
         #return the stack and card_i that was clicked, 
