@@ -244,6 +244,11 @@ class Animation(object):
         self.executeClick(event, check)
         self.redrawAll()
 
+    def drawCircle(self,point):
+        r = 10
+        color = "black"
+        canvas.create_oval(point[0]-r,point[1]-r,point[0]+r,point[1]+r)
+
     def executeClick(self, click, check):
         #action router
         x, y = click.x, click.y
@@ -371,6 +376,7 @@ class Animation(object):
         #iterates through each stack in the list of mixed stacks
             x = left + spacer*stackCol
             stack = self.mixed[stackCol]
+            self.drawCircle((x,mixedHeight))
             stack.draw((x,mixedHeight))
             if self.first: stack.setEmptyBB(stack.stack[0].getRect())
         if self.first: self.first = False
