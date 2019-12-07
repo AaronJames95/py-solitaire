@@ -83,8 +83,10 @@ class Stack(object):
         self.stack = []
         self.column = column
         self.values = ['A','2','3','4','5','6','7','8','9','10','J','Q','K']
-        self.suits = ['♠','♦','♥','♣']
-        
+        self.rSuits = ['♦','♥']
+        self.bSuits = ['♣','♠']
+
+
     def len(self):
         return len(self.stack)
         
@@ -92,10 +94,9 @@ class Stack(object):
         #adds item to top of stack
         #basically asserts item is a Card
         assert(type(item.suit) == str)
-        if self.isLegal(item):
-            self.stack.append(item)
+        self.stack.append(item)
         #returns if operation was successful or not
-        return self.isLegal(item)
+        return True
 
     def top(self):
         return self.stack[-1]
@@ -103,9 +104,6 @@ class Stack(object):
     def pop(self):
         # removes and returns item from top of stack
         return self.stack.pop(-1)
-
-    def isLegal(self,item):
-        return True
 
     def add(self, items):
         #pushes list of items to the stack
@@ -134,7 +132,7 @@ class Stack(object):
 
     def getType(self):
         #stack col corresponds to type, so make them this way!
-        assert(self.column > 0)
+        assert(self.column >= 0)
         if self.column < 7:
             return ('Mixed')
         elif self.column < 11:
@@ -151,8 +149,14 @@ class  MixedStack(Stack):
         super(MixedStack, self).__init__(column)
         #self.column = column
         
-    def isLegal(self,item):
-        return True
+    def isLegal(self,dragBottom):
+        #given the bottom of a drag Stack, sees if it can be placed on stack
+        top = self.top() #top of stack that was clicked on
+        legalSuits = self.rSuits if top.suit in self.bSuits else self.bSuits
+        if top.value == 'A': return False
+        legalVal = self.values[self.values.index(top.value) - 1]
+        return (dragBottom.suit in legalSuits and legalVal == dragBottom.value)
+
 
     def getStackBB(self):
         if self.len() == 0: return (0,0), (0,0)
@@ -201,6 +205,10 @@ class  DragStack(MixedStack):
     def __init__(self, column):
         super(DragStack, self).__init__(column)
         #self.column = column
+
+    def getBottom(self):
+        assert (len(self.stack) > 0)
+        return self.stack[0]
         
     def setLastStack(self,stack):
         self.lastStack = stack
@@ -209,58 +217,27 @@ class  DragStack(MixedStack):
         toRemove = self.len()
         return self.cutStack(self.lastStack,toRemove)
 
+    def empty(self,mixed):
+        self.cutStack(mixed,self.len())
     
-    #need draw method
 
 class Animation(object):
-
-    '''def mousePressed(self,event):
-        x, y = event.x, event.y
-        yMid = self.mixed[0].getStackBB()[0][1]
-        clickedOnBackground = True
-        if y < yMid:
-            #something was clicked in top half of screen
-            #MOD
-            
-            pass
-        else:
-            #something clicked in lower half of screen
-            for stack in self.mixed:
-                bb = stack.getStackBB()
-                #bb is tuple of bounding box corners TopLeft,BottomRight
-                if self.isPointInBB(x,y,bb[0],bb[1]): 
-                    self.mixedStackClicked(x,y,stack)
-                    clickedOnBackground = False
-        if self.dragging and clickedOnBackground:
-            self.dragStack.replace()
-            self.dragging = False
-        self.redrawAll()'''
 
     def mousePressed(self,event):
         #REFACTOR
         self.clickedOnBackground = True
         yMid = self.mixed[0].getStackBB()[0][1]
-
-        if event.y < yMid:
-            '''
-            #something was clicked in top half of screen
-            if x < self.xMid:
-                #something was clicked on top left
-                check = self.checkStacks(self.ordered, event)
-            else:
-                #something clciked on top right
-                check = self.checkStacks(self.deck???, event)
-                '''
+        if event.y < yMid: #something was clicked in top half of screen
+            if x < self.xMid: #something was clicked on top left
+                #check = self.checkStacks(self.ordered, event)
+                pass
+            else: #something clciked on top right
+                pass
+                #check = self.checkStacks(self.deck???, event)
             check = False
-        else:
-            #something clicked in lower half of screen
+        else: #something clicked in lower half of screen
             check = self.checkStacks(self.mixed, event)
         self.executeClick(event, check)
-
-
-        '''if self.dragging and clickedOnBackground:
-            self.dragStack.replace()
-            self.dragging = False'''
         self.redrawAll()
 
     def executeClick(self, click, check):
@@ -274,6 +251,12 @@ class Animation(object):
             stack, card = check[0], check[0].stack[check[1]]
             stackType = stack.getType()
             if self.dragging:
+                self.dragging = not self.dragging
+                if stackType == 'Mixed':
+                    legal = stack.isLegal(self.dragStack.getBottom())
+                    if legal: self.dragStack.empty(stack)
+                    else:
+                        self.dragStack.replace()
                 pass
             elif card.isFaceUp:
                 stack.cardClicked(self.dragStack, check[1])
@@ -291,20 +274,9 @@ class Animation(object):
                 card_i = stack.getTopClicked(click)
                 return [stack, card_i]
                 #stack.cardClicked(x,y,self.dragStack)
-                #self.mixedStackClicked(click, stack) #current
         return False
 
-    def mixedStackClicked(self, click, stack):
-        #should always return a card if clciked inside a stack bb
-        x, y = click.x, click.y
-        if self.dragging:
-
-            pass
-        else:
-            if type(stack.getTopClicked(x,y)) == int:
-                stack.cardClicked(x,y,self.dragStack)
-                self.dragStack.setLastStack(stack)
-                self.dragging = True
+    
     
     def motion(self,event):
         self.mouse = (event.x,event.y)
