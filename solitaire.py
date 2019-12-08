@@ -151,7 +151,7 @@ class Stack(object):
         p1, fake = self.stack[0].getRect()
         fake, p2 = self.stack[-1].getRect()
         return p1,p2
-        
+
 class  MixedStack(Stack):
     def __init__(self, column):
         super(MixedStack, self).__init__(column)
@@ -193,7 +193,12 @@ class  MixedStack(Stack):
             y = start[1] + vertSpacer*cardPos
             self.stack[cardPos].move(x,y)
             self.stack[cardPos].drawCard()
-        
+
+    def isTopCard(self, card):
+        top = self.top()
+        return (card.value == top.value and
+                card.suit == top.suit)
+
 class  OrderedStack(Stack):
     def __init__(self, column):
         super(OrderedStack, self).__init__(column)
@@ -213,6 +218,10 @@ class  OrderedStack(Stack):
             top = self.top()
             top.move(cx,cy)
             top.drawCard()
+    
+    def cardClicked(self, stack):
+        #return DragStack with card and cards under it in order
+        return self.cutStack(stack, 1)
 
     def isLegal(self,dragStack):
         #given the bottom of a drag Stack, sees if it can be placed on stack
@@ -229,10 +238,7 @@ class  OrderedStack(Stack):
                             legalVal == dragBottom.value)
         else:
             return False
-        
-        
-        
-
+              
 class  DeckStack(Stack):
     def __init__(self, column):
         super(DeckStack, self).__init__(column)
@@ -260,19 +266,15 @@ class  DeckStack(Stack):
         #return DragStack with card and cards under it in order
         return self.cutStack(stack, 1)
 
-    def add(self, items):
-        #pushes list of items to the stack
-        for item in items:
-            item.flip()
-            self.push(item)
-
     def rotate(self, discard):
         if self.len() > 0:
             new = self.pop()
             new.flip()
             discard.push(new)
         else:
-            self.add(discard.remove(discard.len()))
+            for item in discard.remove(discard.len()):
+                item.flip()
+                self.push(item)
 
 class  DragStack(MixedStack):
     def __init__(self, column):
@@ -310,6 +312,7 @@ class Animation(object):
             check = self.checkStacks(self.mixed, event)
         self.executeClick(event, check)
         self.redrawAll()
+        if self.checkWin(): self.gameWon = True
 
     def drawCircle(self,point):
         r = 10
@@ -345,7 +348,7 @@ class Animation(object):
             stack.cardClicked(self.dragStack, check[1])
             self.dragStack.setLastStack(stack)
             self.dragging = True  
-        elif len(check) > 1:
+        elif len(check) > 1 and stack.isTopCard(stack.stack[check[1]]):
             check[0].stack[check[1]].flip()
 
     def deckClick(self, click, check):
@@ -367,14 +370,10 @@ class Animation(object):
             self.dragging = False
             legal = stack.isLegal(self.dragStack)
             self.dragStack.empty(stack) if legal else self.dragStack.replace()
-        elif check[0].column == 12: #Right
-            check[0].rotate(self.deckStacks[0])
-        elif check[0].column == 11: #Left
-            if stack.len() > 0:
+        elif stack.len() > 0:
                 stack.cardClicked(self.dragStack)
                 self.dragStack.setLastStack(stack)
                 self.dragging = True 
-
 
     def checkStacks(self, stacks, click):
         #return the stack and card_i that was clicked, 
@@ -437,6 +436,7 @@ class Animation(object):
                                 self.width + 1, self.height + 1, 
                                 fill = self.backgroundColor) 
         self.drawStacks()
+        if self.gameWon: self.showWin()
         Test().testStack()
         
     def getBB(self, cx, cy):
@@ -458,7 +458,30 @@ class Animation(object):
         self.dragStack = DragStack(13)
         self.makeStacks()
         self.first = True
+        self.gameWon = False
         #Test().testSetup(self.mixed)
+    
+    def checkWin(self):
+        if self.checkAlternateWin(): return True
+        for stack in self.ordered:
+            if stack.len() != 13:
+                return False
+        return True
+
+    def checkAlternateWin(self):
+        faceDownCards = 0
+        for stack in self.mixed:
+            for card in stack.stack:
+                if not card.isFaceUp: faceDownCards += 1
+        return (faceDownCards == 0 and
+                self.deckStacks[0].len() == 0 and
+                self.deckStacks[1].len() == 0)
+
+
+    def showWin(self):
+        self.backgroundColor = 'cyan'
+        canvas.create_text(300,500,text = 'You Won the Hand!',font = 40)
+        pass
 
     def makeStacks(self):
         self.temp = Stack()
@@ -482,7 +505,6 @@ class Animation(object):
             self.deckStacks[1].push(self.deck.deal())
         assert(len(self.deck.deck) == 0)
         
-
     def drawStacks(self):
         spacer = 100
         left = 90
