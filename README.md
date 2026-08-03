@@ -3,7 +3,17 @@
 
 Klondike solitaire, built from scratch in Python.
 
-<!-- Add a screenshot or terminal GIF here -->
+## Screenshots
+
+### New Game
+
+![New Game](./assets/1_begin.png)
+
+### Mid Game
+![Mid Game](./assets/2_mid.png)
+
+### Win Screen
+![Win](./assets/3_win.png)
 
 ## About
 
